@@ -1,23 +1,22 @@
 import { Request, Response } from "express";
 import { PrismaClient } from "@prisma/client";
 import { generateSlug } from "../utils/slug";
+import redisClient from "../utils/redis";
 
 const prisma = new PrismaClient();
 
-// ---- Public ----
 export const getAllProducts = async (req: Request, res: Response) => {
-	const { category, minPrice, maxPrice } = req.query;
-	const where: any = {};
-	if (category) where.categoryId = category as string;
-	if (minPrice || maxPrice) {
-		where.price = {};
-		if (minPrice) where.price.gte = parseFloat(minPrice as string);
-		if (maxPrice) where.price.lte = parseFloat(maxPrice as string);
+	const cacheKey = `products:${JSON.stringify(req.query)}`;
+	const cached = await redisClient.get(cacheKey);
+	if (cached) {
+		return res.json(JSON.parse(cached));
 	}
+
 	const products = await prisma.product.findMany({
-		where,
 		include: { category: true },
 	});
+
+	await redisClient.setEx(cacheKey, 60, JSON.stringify(products));
 	res.json(products);
 };
 
