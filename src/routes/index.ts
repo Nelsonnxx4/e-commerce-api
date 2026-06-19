@@ -17,6 +17,13 @@ import {
 	removeFromCart,
 	clearCart,
 } from "../controllers/cart.controller";
+import {
+	createOrder,
+	getMyOrders,
+	getOrderById,
+	getAllOrders,
+	updateOrderStatus,
+} from "../controllers/order.controller";
 import { authenticate } from "../middleware/auth";
 import { isAdmin } from "../middleware/admin";
 
@@ -43,4 +50,16 @@ router.post("/cart/items", authenticate, addToCart);
 router.put("/cart/items/:itemId", authenticate, updateCartItem);
 router.delete("/cart/items/:itemId", authenticate, removeFromCart);
 router.delete("/cart", authenticate, clearCart);
+
+router.post("/orders", authenticate, createOrder);
+router.get("/orders", authenticate, getMyOrders);
+router.get("/orders/:id", authenticate, getOrderById);
+router.get("/admin/orders", authenticate, isAdmin, getAllOrders);
+router.put(
+	"/admin/orders/:id/status",
+	authenticate,
+	isAdmin,
+	updateOrderStatus,
+);
+
 export default router;
