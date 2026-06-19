@@ -29,6 +29,7 @@
 		"nanoid": "^5.1.11",
 		"prisma": "^7.8.0",
 		"redis": "^5.12.1",
+		"slugify": "^1.6.9",
 		"stripe": "^22.1.1"
 	},
 	"devDependencies": {

@@ -4,57 +4,101 @@ provider = "prisma-client-js"
 
 datasource db {
 provider = "postgresql"
-url = env("DATABASE_URL")
-}
 
-enum Role {
-CUSTOMER
-ADMIN
-}
-
-enum OrderStatus {
-PENDING
-PAID
-FAILED
 }
 
 model User {
-id String @id @default(uuid())
-email String @unique
-password String
-role Role @default(CUSTOMER)
-orders Order[]
-createdAt DateTime @default(now())
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(CUSTOMER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  cart      Cart?    // one-to-one
+  orders    Order[]
+}
+
+model Category {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique   // e.g., "electronics"
+  products  Product[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Product {
-id String @id @default(uuid())
-name String
-description String
-price Float
-stock Int
-orderItems OrderItem[]
-createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+  price       Float    @default(0.0)
+  stock       Int      @default(0)
+  imageUrl    String?
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+}
+
+model Cart {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     CartItem[]
+  updatedAt DateTime @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(cuid())
+  cartId    String
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([cartId, productId])  // prevent duplicates
 }
 
 model Order {
-id String @id @default(uuid())
-user User @relation(fields: [userId], references: [id])
-userId String
-items OrderItem[]
-total Float
-status OrderStatus @default(PENDING)
-paystackRef String? @unique
-createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items       OrderItem[]
+  total       Float
+  status      OrderStatus @default(PENDING)
+  shippingAddress String
+  paymentIntentId String?   // from Stripe
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model OrderItem {
-id String @id @default(uuid())
-order Order @relation(fields: [orderId], references: [id])
-orderId String
-product Product @relation(fields: [productId], references: [id])
-productId String
-quantity Int
-price Float
+  id        String   @id @default(cuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity  Int
+  price     Float    // snapshot of product price at order time
+  createdAt DateTime @default(now())
 }
 
+enum Role {
+  CUSTOMER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  PAID
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
