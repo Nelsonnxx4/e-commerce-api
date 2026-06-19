@@ -1,19 +1,15 @@
-import "dotenv/config";
-import prisma from "./prisma";
+import express from "express";
+import dotenv from "dotenv";
+import router from "./routes/index";
 
-async function main() {
-	const users = await prisma.user.findMany({
-		include: { orders: true },
-	});
+dotenv.config();
 
-	console.log("Users:", users);
-}
+const app = express();
+const PORT = process.env.PORT || 5000;
 
-main()
-	.catch((error) => {
-		console.error(error);
-		process.exit(1);
-	})
-	.finally(async () => {
-		await prisma.$disconnect();
-	});
+app.use(express.json());
+app.use("/api", router);
+
+app.listen(PORT, () => {
+	console.log(`Server is running on port ${PORT}`);
+});
